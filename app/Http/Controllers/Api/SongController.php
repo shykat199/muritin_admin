@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\CategoryResource;
+use App\Http\Resources\SongResource;
+use App\Models\Audio;
+use App\Models\Category;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+
+class SongController extends Controller
+{
+    public function index(Request $request): AnonymousResourceCollection
+    {
+        $songs = Audio::with('category')
+            ->where('status', true)
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $term = '%'.$request->string('search').'%';
+
+                $query->where(function ($query) use ($term) {
+                    $query->where('title', 'like', $term)
+                        ->orWhere('artist', 'like', $term);
+                });
+            })
+            ->latest()
+            ->paginate(20);
+
+        return SongResource::collection($songs);
+    }
+
+    public function byCategory(Category $category): AnonymousResourceCollection
+    {
+        $category->loadCount(['audios as songs_count' => function ($query) {
+            $query->where('status', true);
+        }]);
+
+        $songs = Audio::with('category')
+            ->where('status', true)
+            ->where('category_id', $category->id)
+            ->latest()
+            ->paginate(20);
+
+        return SongResource::collection($songs)->additional([
+            'category' => new CategoryResource($category),
+        ]);
+    }
+}
