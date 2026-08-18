@@ -30,7 +30,7 @@
                     <tr>
                         <td class="px-6 py-3">
                             @if ($audio->thumbnail)
-                                <img src="{{ asset('storage/'.$audio->thumbnail) }}" alt="{{ $audio->title }}" class="h-10 w-10 rounded object-cover">
+                                <img src="{{ asset('uploads/thumbnails/'.$audio->thumbnail) }}" alt="{{ $audio->title }}" class="h-10 w-10 rounded object-cover">
                             @else
                                 <div class="h-10 w-10 rounded bg-gray-100"></div>
                             @endif

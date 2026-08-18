@@ -21,7 +21,7 @@
                 Current: {{ basename($audio->audio_file) }}
             @endif
         </p>
-        <audio id="audio-player" controls class="w-full" @if ($isEdit && $audio->audio_file) src="{{ asset('storage/'.$audio->audio_file) }}" @endif></audio>
+        <audio id="audio-player" controls class="w-full" @if ($isEdit && $audio->audio_file) src="{{ asset('uploads/audios/'.$audio->audio_file) }}" @endif></audio>
     </div>
 </div>
 
@@ -32,7 +32,7 @@
     <div id="thumb-dropzone"
          class="mt-1 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 p-4 text-center transition-colors hover:border-gray-400 hover:bg-gray-50">
         <img id="thumb-preview-img"
-             src="{{ $isEdit && $audio->thumbnail ? asset('storage/'.$audio->thumbnail) : '' }}"
+             src="{{ $isEdit && $audio->thumbnail ? asset('uploads/thumbnails/'.$audio->thumbnail) : '' }}"
              class="mb-2 h-40 w-40 rounded-lg object-cover {{ $isEdit && $audio->thumbnail ? '' : 'hidden' }}">
         <div id="thumb-placeholder" class="flex flex-col items-center gap-1 {{ $isEdit && $audio->thumbnail ? 'hidden' : '' }}">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">

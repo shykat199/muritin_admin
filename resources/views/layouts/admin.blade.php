@@ -48,6 +48,7 @@
                     <h1 class="truncate text-lg font-semibold sm:text-xl">@yield('title', 'Dashboard')</h1>
                 </div>
                 <div class="flex shrink-0 items-center gap-2 sm:gap-4">
+                    <a href="{{ route('clear-cache') }}" class="text-sm font-medium text-gray-600 hover:text-gray-900">Clear Cache</a>
                     <span class="hidden text-sm text-gray-500 sm:inline">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf

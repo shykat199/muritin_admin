@@ -7,7 +7,6 @@ use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Shykat\WebpBolt\Encoders\WebpEncoder;
@@ -32,6 +31,7 @@ class AudioController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $storedFiles = [];
 
         try {
             ini_set('memory_limit', '512M');
@@ -39,22 +39,20 @@ class AudioController extends Controller
 
             $validated = $request->validate($this->rules());
 
-            $storedFiles = [];
-
-            $validated['audio_file'] = $request->file('audio_file')->store('audios', 'public');
-            $storedFiles[] = $validated['audio_file'];
+            $validated['audio_file'] = $this->storeAudioFile($request->file('audio_file'));
+            $storedFiles['audios'] = $validated['audio_file'];
 
             if ($request->hasFile('thumbnail')) {
                 $validated['thumbnail'] = $this->storeThumbnailAsWebp($request->file('thumbnail'));
-                $storedFiles[] = $validated['thumbnail'];
+                $storedFiles['thumbnails'] = $validated['thumbnail'];
             }
 
             $validated['status'] = $request->boolean('status');
 
             Audio::create($validated);
         } catch (\Throwable $exception) {
-            foreach ($storedFiles as $path) {
-                Storage::disk('public')->delete($path);
+            foreach ($storedFiles as $folder => $filename) {
+                @unlink(public_path("uploads/{$folder}/{$filename}"));
             }
 
             return back()
@@ -80,13 +78,13 @@ class AudioController extends Controller
         $validated = $request->validate($this->rules(forUpdate: true));
 
         if ($request->hasFile('audio_file')) {
-            Storage::disk('public')->delete($audio->audio_file);
-            $validated['audio_file'] = $request->file('audio_file')->store('audios', 'public');
+            @unlink(public_path('uploads/audios/'.$audio->audio_file));
+            $validated['audio_file'] = $this->storeAudioFile($request->file('audio_file'));
         }
 
         if ($request->hasFile('thumbnail')) {
             if ($audio->thumbnail) {
-                Storage::disk('public')->delete($audio->thumbnail);
+                @unlink(public_path('uploads/thumbnails/'.$audio->thumbnail));
             }
             $validated['thumbnail'] = $this->storeThumbnailAsWebp($request->file('thumbnail'));
         }
@@ -100,23 +98,38 @@ class AudioController extends Controller
 
     public function destroy(Audio $audio): RedirectResponse
     {
-        Storage::disk('public')->delete(array_filter([$audio->audio_file, $audio->thumbnail]));
+        if ($audio->audio_file) {
+            @unlink(public_path('uploads/audios/'.$audio->audio_file));
+        }
+
+        if ($audio->thumbnail) {
+            @unlink(public_path('uploads/thumbnails/'.$audio->thumbnail));
+        }
 
         $audio->delete();
 
         return redirect()->route('audios.index')->with('status', 'Audio deleted successfully.');
     }
 
+    private function storeAudioFile(UploadedFile $file): string
+    {
+        $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
+
+        $file->move(public_path('uploads/audios'), $filename);
+
+        return $filename;
+    }
+
     private function storeThumbnailAsWebp(UploadedFile $file): string
     {
-        $relativePath = 'thumbnails/' . Str::random(40) . '.webp';
-        $destination = Storage::disk('public')->path($relativePath);
+        $filename = Str::random(40).'.webp';
+        $destination = public_path('uploads/thumbnails/'.$filename);
 
         (new ImageProcessor())
             ->addTransform(new Resize(800, 800))
             ->save($file->getRealPath(), $destination, new WebpEncoder(quality: 80));
 
-        return $relativePath;
+        return $filename;
     }
 
     private function rules(bool $forUpdate = false): array
