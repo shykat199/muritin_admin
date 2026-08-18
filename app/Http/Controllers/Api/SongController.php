@@ -24,7 +24,7 @@ class SongController extends Controller
                         ->orWhere('artist', 'like', $term);
                 });
             })
-            ->latest()
+            ->inRandomOrder()
             ->paginate(20);
 
         return SongResource::collection($songs);
@@ -39,11 +39,21 @@ class SongController extends Controller
         $songs = Audio::with('category')
             ->where('status', true)
             ->where('category_id', $category->id)
-            ->latest()
+            ->inRandomOrder()
             ->paginate(20);
 
         return SongResource::collection($songs)->additional([
             'category' => new CategoryResource($category),
         ]);
+    }
+
+    public function show(string $audioId): SongResource
+    {
+        $song = Audio::with('category')
+            ->where('audio_id', $audioId)
+            ->where('status', true)
+            ->firstOrFail();
+
+        return new SongResource($song);
     }
 }
